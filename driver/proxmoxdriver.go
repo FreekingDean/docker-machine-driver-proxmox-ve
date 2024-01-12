@@ -41,10 +41,10 @@ type Driver struct {
 
 	// File to load as boot image RancherOS/Boot2Docker
 
-	Scsi0       string //Scsi0 data
-	Scsi0Import string //Scsi0 Import
-	Ide0        string //Ide0 data
-	Memory      int    // memory in GB
+	Scsi       string //Scsi0 data
+	ScsiImport string //Scsi0 Import
+	Ide        string //Ide0 data
+	Memory     int    // memory in GB
 
 	NetBridge  string // bridge applied to network interface
 	NetVlanTag int    // vlan tag
@@ -130,18 +130,6 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Usage:  "pool to attach to",
 			Value:  "",
 		},
-		mcnflag.StringFlag{
-			EnvVar: "PROXMOXVE_VM_STORAGE_PATH",
-			Name:   "proxmoxve-vm-storage-path",
-			Usage:  "storage to create the VM volume on",
-			Value:  "", // leave the flag default value blank to support the clone default behavior if not explicity set of 'use what is most appropriate'
-		},
-		mcnflag.IntFlag{
-			EnvVar: "PROXMOXVE_VM_STORAGE_SIZE",
-			Name:   "proxmoxve-vm-storage-size",
-			Usage:  "disk size in GB",
-			Value:  16,
-		},
 		mcnflag.IntFlag{
 			EnvVar: "PROXMOXVE_VM_MEMORY",
 			Name:   "proxmoxve-vm-memory",
@@ -155,14 +143,14 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Value:  1,
 		},
 		mcnflag.StringFlag{
-			EnvVar: "PROXMOXVE_VM_SCSI0",
-			Name:   "proxmoxve-vm-scsi0",
+			EnvVar: "PROXMOXVE_VM_SCSI",
+			Name:   "proxmoxve-vm-scsi",
 			Usage:  "proxmox scsi0 filename",
 			Value:  "",
 		},
 		mcnflag.StringFlag{
-			EnvVar: "PROXMOXVE_VM_SCSI0_IMPORT",
-			Name:   "proxmoxve-vm-scsi0-import",
+			EnvVar: "PROXMOXVE_VM_SCSI_IMPORT",
+			Name:   "proxmoxve-vm-scsi-import",
 			Usage:  "proxmox scsi0 import-from",
 			Value:  "",
 		},
@@ -232,9 +220,9 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.Memory = flags.Int("proxmoxve-vm-memory")
 	d.Memory *= 1024
 	d.GuestUsername = "docker"
-	d.Scsi0 = flags.String("proxmoxve-vm-scsi0")
-	d.Scsi0Import = flags.String("proxmoxve-vm-scsi0-import")
-	d.Ide0 = flags.String("proxmoxve-vm-ide0")
+	d.Scsi = flags.String("proxmoxve-vm-scsi")
+	d.ScsiImport = flags.String("proxmoxve-vm-scsi-import")
+	d.Ide = flags.String("proxmoxve-vm-ide")
 	d.CPUCores = flags.Int("proxmoxve-vm-cpu-cores")
 	d.NetBridge = flags.String("proxmoxve-vm-net-bridge")
 	d.NetVlanTag = flags.Int("proxmoxve-vm-net-tag")
@@ -415,21 +403,21 @@ WantedBy=multi-user.target
 		Serials: &qemu.Serials{proxmox.String("socket")},
 	}
 
-	if d.Scsi0 != "" {
+	if d.Scsi != "" {
 		d.debug("Adding scsi0")
 		scsi := &qemu.Scsi{
-			File: d.Scsi0,
+			File: d.Scsi,
 		}
-		if d.Scsi0Import != "" {
+		if d.ScsiImport != "" {
 			d.debug("adding import")
-			scsi.ImportFrom = proxmox.String(d.Scsi0Import)
+			scsi.ImportFrom = proxmox.String(d.ScsiImport)
 		}
 		req.Scsis = &qemu.Scsis{scsi}
 	}
-	if d.Ide0 != "" {
+	if d.Ide != "" {
 		req.Ides = &qemu.Ides{
 			&qemu.Ide{
-				File: d.Ide0,
+				File: d.Ide,
 			},
 		}
 	}
