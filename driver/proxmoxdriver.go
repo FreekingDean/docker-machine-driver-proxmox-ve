@@ -382,10 +382,14 @@ WantedBy=multi-user.target
 	}
 
 	d.debugf("Next ID is '%s'", id)
+	fwstr := fmt.Sprintf(
+		"name=opt/com.coreos/config,string='%s'",
+		strings.Replace(string(cfgStr), ",", ",,", -1),
+	)
 	d.VMID = id
 	req := qemu.CreateRequest{
 		Vmid:   d.VMID,
-		Args:   proxmox.String(fmt.Sprintf("-fw_cfg %s", strings.Replace(string(cfgStr), ",", ",,", -1))),
+		Args:   proxmox.String(fmt.Sprintf("-fw_cfg %s", fwstr)),
 		Name:   proxmox.String(d.GetMachineName()),
 		Node:   d.Node,
 		Memory: proxmox.Int(d.Memory),
