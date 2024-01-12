@@ -41,9 +41,10 @@ type Driver struct {
 
 	// File to load as boot image RancherOS/Boot2Docker
 
-	Scsi0  string //Scsi0 data
-	Ide0   string //Ide0 data
-	Memory int    // memory in GB
+	Scsi0       string //Scsi0 data
+	Scsi0Import string //Scsi0 Import
+	Ide0        string //Ide0 data
+	Memory      int    // memory in GB
 
 	NetBridge  string // bridge applied to network interface
 	NetVlanTag int    // vlan tag
@@ -160,6 +161,12 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Value:  "",
 		},
 		mcnflag.StringFlag{
+			EnvVar: "PROXMOXVE_VM_SCSI0_IMPORT",
+			Name:   "proxmoxve-vm-scsi0-import",
+			Usage:  "proxmox scsi0 import-from",
+			Value:  "",
+		},
+		mcnflag.StringFlag{
 			EnvVar: "PROXMOXVE_VM_ide0",
 			Name:   "proxmoxve-vm-ide0",
 			Usage:  "proxmox ide0 filename",
@@ -226,6 +233,7 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.Memory *= 1024
 	d.GuestUsername = "docker"
 	d.Scsi0 = flags.String("proxmoxve-vm-scsi0")
+	d.Scsi0Import = flags.String("proxmoxve-vm-scsi0-import")
 	d.Ide0 = flags.String("proxmoxve-vm-ide0")
 	d.CPUCores = flags.Int("proxmoxve-vm-cpu-cores")
 	d.NetBridge = flags.String("proxmoxve-vm-net-bridge")
@@ -408,11 +416,13 @@ WantedBy=multi-user.target
 	}
 
 	if d.Scsi0 != "" {
-		req.Scsis = &qemu.Scsis{
-			&qemu.Scsi{
-				File: d.Scsi0,
-			},
+		scsi := &qemu.Scsi{
+			File: d.Scsi0,
 		}
+		if d.Scsi0Import != "" {
+			scsi.ImportFrom = proxmox.String(d.Scsi0Import)
+		}
+		req.Scsis = &qemu.Scsis{scsi}
 	}
 	if d.Ide0 != "" {
 		req.Ides = &qemu.Ides{
