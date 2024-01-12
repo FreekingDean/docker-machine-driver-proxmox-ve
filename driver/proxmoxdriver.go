@@ -19,6 +19,7 @@ import (
 	"github.com/FreekingDean/proxmox-api-go/proxmox/nodes/qemu"
 	"github.com/FreekingDean/proxmox-api-go/proxmox/nodes/qemu/agent"
 	"github.com/FreekingDean/proxmox-api-go/proxmox/nodes/qemu/status"
+	"github.com/FreekingDean/proxmox-api-go/proxmox/nodes/storage"
 	"github.com/FreekingDean/proxmox-api-go/proxmox/nodes/tasks"
 	ignition "github.com/coreos/ignition/v2/config/v3_4/types"
 )
@@ -37,44 +38,24 @@ type Driver struct {
 	User     string // username
 	Password string // password
 	Realm    string // realm, e.g. pam, pve, etc.
+	Pool     string // pool
 
 	// File to load as boot image RancherOS/Boot2Docker
-	ImageFile string // in the format <storagename>:iso/<filename>.iso
+	ImageFile   string // in the format <storagename>:iso/<filename>.iso
+	ISOUrl      string
+	ISOFilename string
 
-	Storage         string // internal PVE storage name
-	StorageType     string // Type of the storage (currently QCOW2 and RAW)
-	DiskSize        string // disk size in GB
-	Memory          int    // memory in GB
-	StorageFilename string
-	Onboot          string // Specifies whether a VM will be started during system bootup.
-	Protection      string // Sets the protection flag of the VM. This will disable the remove VM and remove disk operations.
-	Citype          string // Specifies the cloud-init configuration format.
-	NUMA            string // Enable/disable NUMA
+	Storage  string // internal PVE storage name
+	DiskSize int    // disk size in GB
+	Memory   int    // memory in GB
 
-	CiEnabled string
-
-	NetModel    string // Net Interface Model, [e1000, virtio, realtek, etc...]
-	NetFirewall string // Enable/disable firewall
-	NetMtu      string // set nic MTU
-	NetBridge   string // bridge applied to network interface
-	NetVlanTag  int    // vlan tag
-
-	ScsiController string
-	ScsiAttributes string
+	NetBridge  string // bridge applied to network interface
+	NetVlanTag int    // vlan tag
 
 	VMID          int    // VM ID only filled by create()
-	VMIDRange     string // acceptable range of VMIDs
-	VMUUID        string // UUID to confirm
-	CloneVMID     string // VM ID to clone
-	CloneFull     int    // Make a full (detached) clone from parent (defaults to true if VMID is not a template, otherwise false)
 	GuestUsername string // user to log into the guest OS to copy the public key
-	GuestPassword string // password to log into the guest OS to copy the public key
-	GuestSSHPort  int    // ssh port to log into the guest OS to copy the public key
-	CPU           string // Emulated CPU type.
-	CPUSockets    string // The number of cpu sockets.
-	CPUCores      string // The number of cores per socket.
+	CPUCores      int    // The number of cores per socket.
 	driverDebug   bool   // driver debugging
-	restyDebug    bool   // enable resty debugging
 }
 
 func (d *Driver) debugf(format string, v ...interface{}) {
@@ -158,11 +139,11 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Usage:  "storage to create the VM volume on",
 			Value:  "", // leave the flag default value blank to support the clone default behavior if not explicity set of 'use what is most appropriate'
 		},
-		mcnflag.StringFlag{
+		mcnflag.IntFlag{
 			EnvVar: "PROXMOXVE_VM_STORAGE_SIZE",
 			Name:   "proxmoxve-vm-storage-size",
 			Usage:  "disk size in GB",
-			Value:  "16",
+			Value:  16,
 		},
 		mcnflag.IntFlag{
 			EnvVar: "PROXMOXVE_VM_MEMORY",
@@ -170,11 +151,11 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Usage:  "memory in GB",
 			Value:  8,
 		},
-		mcnflag.StringFlag{
+		mcnflag.IntFlag{
 			EnvVar: "PROXMOXVE_VM_CPU_CORES",
 			Name:   "proxmoxve-vm-cpu-cores",
 			Usage:  "number of cpu cores",
-			Value:  "",
+			Value:  1,
 		},
 		mcnflag.StringFlag{
 			EnvVar: "PROXMOXVE_ISO_URL",
@@ -247,14 +228,14 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.Pool = flags.String("proxmoxve-proxmox-pool")
 
 	// VM configuration
-	d.DiskSize = flags.String("proxmoxve-vm-storage-size")
+	d.DiskSize = flags.Int("proxmoxve-vm-storage-size")
 	d.Storage = flags.String("proxmoxve-vm-storage-path")
 	d.Memory = flags.Int("proxmoxve-vm-memory")
 	d.Memory *= 1024
 	d.GuestUsername = "docker"
 	d.ISOUrl = flags.String("proxmoxve-vm-iso-url")
 	d.ISOFilename = flags.String("proxmoxve-vm-iso-filename")
-	d.CPUCores = flags.String("proxmoxve-vm-cpu-cores")
+	d.CPUCores = flags.Int("proxmoxve-vm-cpu-cores")
 	d.NetBridge = flags.String("proxmoxve-vm-net-bridge")
 	d.NetVlanTag = flags.Int("proxmoxve-vm-net-tag")
 
@@ -295,7 +276,7 @@ func (d *Driver) GetSSHHostname() (string, error) {
 
 // GetSSHPort returns the ssh port, 22 if not specified
 func (d *Driver) GetSSHPort() (int, error) {
-	return d.GuestSSHPort, nil
+	return 22, nil
 }
 
 // GetSSHUsername returns the ssh user name, root if not specified
@@ -339,19 +320,8 @@ func (d *Driver) PreCreateCheck() error {
 		d.Storage = "local"
 	}
 
-	if len(d.StorageType) < 1 {
-		d.StorageType = "qcow2"
-	}
-
 	if len(d.NetBridge) < 1 {
 		d.NetBridge = "vmbr0"
-	}
-
-	if d.StorageType != "raw" && d.StorageType != "qcow2" {
-		return fmt.Errorf("storage type '%s' is not supported", d.StorageType)
-	}
-	if d.ProvisionStrategy != "clone" && d.ProvisionStrategy != "cdrom" {
-		return fmt.Errorf("provision strategy '%s' is no supported", d.ProvisionStrategy)
 	}
 
 	return nil
@@ -375,13 +345,7 @@ func (d *Driver) Create() error {
 	if err != nil {
 		return err
 	}
-	cfg := &ignition.Config{
-		Systemd: &ignition.Systemd{
-			Units: []*ignition.Unit{
-				&ignition.Unit{
-					Name:    "rpm-ostree-install-qemu-guest-agent.service",
-					Enabled: &tvalue,
-					Content: `
+	systemd := `
 [Unit]
 Description=Layer qemu-guest-agent with rpm-ostree
 Wants=network-online.target
@@ -397,13 +361,20 @@ ExecStart=/bin/touch /var/lib/%N.stamp
 
 [Install]
 WantedBy=multi-user.target
-`,
+`
+	cfg := &ignition.Config{
+		Systemd: ignition.Systemd{
+			Units: []ignition.Unit{
+				ignition.Unit{
+					Name:     "rpm-ostree-install-qemu-guest-agent.service",
+					Enabled:  &tvalue,
+					Contents: &systemd,
 				},
 			},
 		},
-		Passwd: &ignition.Passwd{
-			Users: []*ignition.User{
-				&ignition.PasswdUser{
+		Passwd: ignition.Passwd{
+			Users: []ignition.PasswdUser{
+				ignition.PasswdUser{
 					Name: "docker",
 					SSHAuthorizedKeys: []ignition.SSHAuthorizedKey{
 						ignition.SSHAuthorizedKey(key),
@@ -418,39 +389,44 @@ WantedBy=multi-user.target
 		return err
 	}
 
-	storage.DownloadUrl(context.Background(), storage.DownloadUrlRequest{
-		ContentType: "iso",
-		Filename:    d.IsoFilename,
-		Storage:     d.Storage,
-		Node:        d.Node,
-		Url:         d.ISOUrl,
+	s := storage.New(c)
+	taskID, err := s.DownloadUrl(context.Background(), storage.DownloadUrlRequest{
+		Content:  "iso",
+		Filename: d.ISOFilename,
+		Storage:  d.Storage,
+		Node:     d.Node,
+		Url:      d.ISOUrl,
 	})
+	err = d.waitForTaskToComplete(taskID, 10*time.Minute)
+	if err != nil {
+		return err
+	}
 
 	d.debugf("Next ID is '%s'", id)
 	d.VMID = id
 	req := qemu.CreateRequest{
 		Vmid:   d.VMID,
-		Args:   fmt.Sprintf("-fw_cfg %s", strings.Replace(cfgStr, ",", ",,")),
-		Name:   d.GetMachineName(),
+		Args:   proxmox.String(fmt.Sprintf("-fw_cfg %s", strings.Replace(string(cfgStr), ",", ",,", -1))),
+		Name:   proxmox.String(d.GetMachineName()),
 		Node:   d.Node,
-		Memory: d.Memory,
-		Cores:  d.CPUCores,
-		Pool:   proxmox.PVEString(d.Pool),
+		Memory: proxmox.Int(d.Memory),
+		Cores:  proxmox.Int(d.CPUCores),
+		Pool:   proxmox.String(d.Pool),
 		Nets: &qemu.Nets{
 			&qemu.Net{
-				Model:  qermu.NetModel_VIRTIO,
-				Bridge: d.Bridge,
-				Tag:    d.Tag,
+				Model:  qemu.NetModel_VIRTIO,
+				Bridge: proxmox.String(d.NetBridge),
+				Tag:    proxmox.Int(d.NetVlanTag),
 			},
 		},
 		Agent: &qemu.Agent{
-			Enabled: *proxmox.PVEBool(plan.GuestAgent.ValueBool()),
+			Enabled: *proxmox.PVEBool(true),
 		},
-		Serials: &qemu.Serials{"socket"},
+		Serials: &qemu.Serials{proxmox.String("socket")},
 		Ides: &qemu.Ides{
 			&qemu.Ide{
-				File:  fmt.Sprintf("%s:iso/%s", d.Storage, d.IsoFilename),
-				Media: qemu.IdeMedia_CDROM,
+				File:  fmt.Sprintf("%s:iso/%s", d.Storage, d.ISOFilename),
+				Media: qemu.PtrIdeMedia(qemu.IdeMedia_CDROM),
 			},
 		},
 		Scsis: &qemu.Scsis{
@@ -459,7 +435,8 @@ WantedBy=multi-user.target
 			},
 		},
 	}
-	_, err := qemu.Create(context.Background(), req)
+	q := qemu.New(c)
+	_, err = q.Create(context.Background(), req)
 	if err != nil {
 		return err
 	}
@@ -493,7 +470,7 @@ func (d *Driver) checkIP() (string, error) {
 	d.debugf("checking for IP address")
 	c, err := d.EnsureClient()
 	if err != nil {
-		return err
+		return "", err
 	}
 	a := agent.New(c)
 	resp, err := a.Create(context.Background(), agent.CreateRequest{
@@ -502,9 +479,21 @@ func (d *Driver) checkIP() (string, error) {
 		Vmid:    d.VMID,
 	})
 
-	for _, nic := range resp["data"]["result"] {
-		if nic["name"] != "lo" {
-			for _, ip := range nic["ip-addresses"] {
+	data, ok := resp["data"].(map[string][]map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("Bad response type")
+	}
+	for _, nic := range data["result"] {
+		name, ok := nic["name"].(string)
+		if !ok {
+			return "", fmt.Errorf("Bad response type")
+		}
+		if name != "lo" {
+			ips, ok := nic["ip-addresses"].([]map[string]string)
+			if !ok {
+				return "", fmt.Errorf("Bad response type")
+			}
+			for _, ip := range ips {
 				if ip["ip-address-type"] == "ipv4" && ip["ip-address"] != "127.0.0.1" {
 					return ip["ip-address"], nil
 				}
@@ -568,15 +557,15 @@ func (d *Driver) waitForTaskToComplete(taskId string, dur time.Duration) error {
 		resp, err := t.ReadTaskStatus(
 			context.Background(),
 			tasks.ReadTaskStatusRequest{
-				Node: node,
-				Upid: upid,
+				Node: d.Node,
+				Upid: taskId,
 			},
 		)
 		if err != nil {
 			return err
 		}
 		if resp.Status != "running" {
-			if resp.ExitStatus != "OK" {
+			if resp.Status != "OK" {
 				return fmt.Errorf("task failed")
 			}
 			return nil
@@ -662,7 +651,7 @@ func (d *Driver) Remove() error {
 		return nil
 	}
 	// force shut down VM before invoking delete
-	err = d.Kill()
+	err := d.Kill()
 	if err != nil {
 		return err
 	}
@@ -673,7 +662,7 @@ func (d *Driver) Remove() error {
 	}
 	q := qemu.New(c)
 
-	taskId, err := q.Delete(context.Background(), qemu.DeleteRequest{
+	taskID, err := q.Delete(context.Background(), qemu.DeleteRequest{
 		Vmid:                     d.VMID,
 		Node:                     d.Node,
 		DestroyUnreferencedDisks: proxmox.PVEBool(true),
