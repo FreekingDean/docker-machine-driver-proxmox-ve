@@ -1,4 +1,4 @@
-module github.com/FreekingDean/docker-machine-driver-proxmox-ve
+module github.com/FreekingDean/docker-machine-driver-proxmoxve
 
 go 1.21.4
 
@@ -7,10 +7,6 @@ require (
 	github.com/coreos/ignition/v2 v2.17.0
 	github.com/docker/machine v0.16.2
 	github.com/labstack/gommon v0.4.2
-	github.com/lnxbil/docker-machine-driver-proxmox-ve v0.0.0-20200729213752-424d127ead78
-	github.com/mosolovsa/go_cat_sshfilerw v0.0.0-20170307095915-3f6912dbd9e4
-	golang.org/x/crypto v0.18.0
-	gopkg.in/resty.v1 v1.12.0
 )
 
 require (
@@ -27,7 +23,7 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/vincent-petithory/dataurl v1.0.0 // indirect
-	golang.org/x/net v0.18.0 // indirect
+	golang.org/x/crypto v0.18.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/term v0.16.0 // indirect
 )
