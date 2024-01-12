@@ -1,0 +1,10 @@
+builds:
+  - goos: &default-goos
+      - darwin
+      - linux
+      - windows
+    goarch: &default-arch
+      - amd64
+      - arm64
+    env: &default-env
+      - CGO_ENABLED=0
