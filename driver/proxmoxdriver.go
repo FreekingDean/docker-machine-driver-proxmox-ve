@@ -1,4 +1,4 @@
-package dockermachinedriverproxmoxve
+package driver
 
 import (
 	"context"
