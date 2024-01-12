@@ -219,7 +219,7 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	// VM configuration
 	d.Memory = flags.Int("proxmoxve-vm-memory")
 	d.Memory *= 1024
-	d.GuestUsername = "docker"
+	d.GuestUsername = "rancher"
 	d.Scsi = flags.String("proxmoxve-vm-scsi")
 	d.ScsiImport = flags.String("proxmoxve-vm-scsi-import")
 	d.Ide = flags.String("proxmoxve-vm-ide")
@@ -362,7 +362,7 @@ WantedBy=multi-user.target
 		Passwd: ignition.Passwd{
 			Users: []ignition.PasswdUser{
 				ignition.PasswdUser{
-					Name: "docker",
+					Name: d.GuestUsername,
 					SSHAuthorizedKeys: []ignition.SSHAuthorizedKey{
 						ignition.SSHAuthorizedKey(key),
 					},
