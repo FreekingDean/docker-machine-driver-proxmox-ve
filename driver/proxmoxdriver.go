@@ -216,8 +216,6 @@ func (d *Driver) DriverName() string {
 func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.debug("SetConfigFromFlags called")
 
-	d.ProvisionStrategy = flags.String("proxmoxve-provision-strategy")
-
 	// PROXMOX API Connection settings
 	d.Host = flags.String("proxmoxve-proxmox-host")
 	d.Node = flags.String("proxmoxve-proxmox-node")
@@ -329,11 +327,13 @@ func (d *Driver) PreCreateCheck() error {
 
 // Create creates a new VM with storage
 func (d *Driver) Create() error {
+	d.debug("Creating Client")
 	c, err := d.EnsureClient()
 	if err != nil {
 		return err
 	}
 
+	d.debug("getting next vmid")
 	cclient := cluster.New(c)
 	id, err := cclient.Nextid(context.Background(), cluster.NextidRequest{})
 	if err != nil {
@@ -341,6 +341,7 @@ func (d *Driver) Create() error {
 	}
 	tvalue := true
 
+	d.debug("gen keys")
 	key, err := d.generateKey()
 	if err != nil {
 		return err
@@ -389,6 +390,7 @@ WantedBy=multi-user.target
 		return err
 	}
 
+	d.debug("download URL")
 	s := storage.New(c)
 	taskID, err := s.DownloadUrl(context.Background(), storage.DownloadUrlRequest{
 		Content:  "iso",
@@ -397,6 +399,9 @@ WantedBy=multi-user.target
 		Node:     d.Node,
 		Url:      d.ISOUrl,
 	})
+	if err != nil {
+		return err
+	}
 	err = d.waitForTaskToComplete(taskID, 10*time.Minute)
 	if err != nil {
 		return err
