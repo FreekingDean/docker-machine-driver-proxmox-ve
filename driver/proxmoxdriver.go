@@ -545,7 +545,7 @@ func (d *Driver) waitForTaskToComplete(taskId string, dur time.Duration) error {
 		}
 		if resp.Status != "running" {
 			if resp.Status != "OK" {
-				return fmt.Errorf("task failed")
+				return fmt.Errorf("task failed '%s'", resp.Status)
 			}
 			return nil
 		}
@@ -632,7 +632,7 @@ func (d *Driver) Remove() error {
 	// force shut down VM before invoking delete
 	err := d.Kill()
 	if err != nil {
-		return err
+		d.debug("error stopping vm " + err.Error())
 	}
 
 	c, err := d.EnsureClient()
