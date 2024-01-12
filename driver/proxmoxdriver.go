@@ -19,7 +19,6 @@ import (
 	"github.com/FreekingDean/proxmox-api-go/proxmox/nodes/qemu"
 	"github.com/FreekingDean/proxmox-api-go/proxmox/nodes/qemu/agent"
 	"github.com/FreekingDean/proxmox-api-go/proxmox/nodes/qemu/status"
-	"github.com/FreekingDean/proxmox-api-go/proxmox/nodes/storage"
 	"github.com/FreekingDean/proxmox-api-go/proxmox/nodes/tasks"
 	ignition "github.com/coreos/ignition/v2/config/v3_4/types"
 )
@@ -42,7 +41,6 @@ type Driver struct {
 
 	// File to load as boot image RancherOS/Boot2Docker
 	ImageFile   string // in the format <storagename>:iso/<filename>.iso
-	ISOUrl      string
 	ISOFilename string
 
 	Storage  string // internal PVE storage name
@@ -158,15 +156,9 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Value:  1,
 		},
 		mcnflag.StringFlag{
-			EnvVar: "PROXMOXVE_ISO_URL",
-			Name:   "proxmoxve-vm-iso-url",
-			Usage:  "ISO Download URL",
-			Value:  "",
-		},
-		mcnflag.StringFlag{
 			EnvVar: "PROXMOXVE_VM_ISO_FILENAME",
 			Name:   "proxmoxve-vm-iso-filename",
-			Usage:  "name of iso file post download",
+			Usage:  "name of iso filename",
 			Value:  "",
 		},
 		mcnflag.StringFlag{
@@ -231,7 +223,6 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.Memory = flags.Int("proxmoxve-vm-memory")
 	d.Memory *= 1024
 	d.GuestUsername = "docker"
-	d.ISOUrl = flags.String("proxmoxve-vm-iso-url")
 	d.ISOFilename = flags.String("proxmoxve-vm-iso-filename")
 	d.CPUCores = flags.Int("proxmoxve-vm-cpu-cores")
 	d.NetBridge = flags.String("proxmoxve-vm-net-bridge")
@@ -386,23 +377,6 @@ WantedBy=multi-user.target
 	}
 
 	cfgStr, err := json.Marshal(cfg)
-	if err != nil {
-		return err
-	}
-
-	d.debug("download URL")
-	s := storage.New(c)
-	taskID, err := s.DownloadUrl(context.Background(), storage.DownloadUrlRequest{
-		Content:  "iso",
-		Filename: d.ISOFilename,
-		Storage:  d.Storage,
-		Node:     d.Node,
-		Url:      d.ISOUrl,
-	})
-	if err != nil {
-		return err
-	}
-	err = d.waitForTaskToComplete(taskID, 10*time.Minute)
 	if err != nil {
 		return err
 	}
