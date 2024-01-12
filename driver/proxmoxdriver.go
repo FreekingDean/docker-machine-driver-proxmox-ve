@@ -381,7 +381,7 @@ WantedBy=multi-user.target
 		return err
 	}
 
-	d.debugf("Next ID is '%s'", id)
+	d.debugf("Next ID is '%d'", id)
 	fwstr := fmt.Sprintf(
 		"name=opt/com.coreos/config,string='%s'",
 		strings.Replace(string(cfgStr), ",", ",,", -1),
@@ -464,21 +464,21 @@ func (d *Driver) checkIP() (string, error) {
 
 	data, ok := resp["data"].(map[string][]map[string]interface{})
 	if !ok {
-		return "", fmt.Errorf("Bad response type")
+		return "", nil
 	}
 	for _, nic := range data["result"] {
 		name, ok := nic["name"].(string)
 		if !ok {
-			return "", fmt.Errorf("Bad response type")
+			return "", nil
 		}
 		if name != "lo" {
 			ips, ok := nic["ip-addresses"].([]map[string]string)
 			if !ok {
-				return "", fmt.Errorf("Bad response type")
+				return "", nil
 			}
 			for _, ip := range ips {
 				if ip["ip-address-type"] == "ipv4" && ip["ip-address"] != "127.0.0.1" {
-					return ip["ip-address"], nil
+					return "", nil
 				}
 			}
 		}
