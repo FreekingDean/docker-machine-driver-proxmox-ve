@@ -155,7 +155,7 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Value:  "",
 		},
 		mcnflag.StringFlag{
-			EnvVar: "PROXMOXVE_VM_ide",
+			EnvVar: "PROXMOXVE_VM_IDE",
 			Name:   "proxmoxve-vm-ide",
 			Usage:  "proxmox ide filename",
 			Value:  "",
@@ -369,6 +369,9 @@ WantedBy=multi-user.target
 				},
 			},
 		},
+		Ignition: ignition.Ignition{
+			Version: "3.4.0",
+		},
 	}
 
 	cfgStr, err := json.Marshal(cfg)
@@ -422,7 +425,7 @@ WantedBy=multi-user.target
 		}
 	}
 	q := qemu.New(c)
-	_, err = q.Create(context.Background(), req)
+	taskID, err := q.Create(context.Background(), req)
 	if err != nil {
 		return err
 	}
@@ -432,6 +435,10 @@ WantedBy=multi-user.target
 			d.Remove()
 		}
 	}()
+	err = d.waitForTaskToComplete(taskID, 2*time.Minute)
+	if err != nil {
+		return err
+	}
 
 	// start the VM
 	err = d.Start()
