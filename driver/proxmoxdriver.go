@@ -155,9 +155,9 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Value:  "",
 		},
 		mcnflag.StringFlag{
-			EnvVar: "PROXMOXVE_VM_ide0",
-			Name:   "proxmoxve-vm-ide0",
-			Usage:  "proxmox ide0 filename",
+			EnvVar: "PROXMOXVE_VM_ide",
+			Name:   "proxmoxve-vm-ide",
+			Usage:  "proxmox ide filename",
 			Value:  "",
 		},
 		mcnflag.StringFlag{
