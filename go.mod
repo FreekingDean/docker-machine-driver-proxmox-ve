@@ -3,7 +3,7 @@ module github.com/FreekingDean/docker-machine-driver-proxmoxve
 go 1.21.4
 
 require (
-	github.com/FreekingDean/proxmox-api-go v0.2.0
+	github.com/FreekingDean/proxmox-api-go v0.2.1
 	github.com/coreos/ignition/v2 v2.17.0
 	github.com/docker/machine v0.16.2
 	github.com/labstack/gommon v0.4.2
