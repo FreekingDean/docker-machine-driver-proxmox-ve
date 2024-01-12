@@ -362,7 +362,8 @@ WantedBy=multi-user.target
 		Passwd: ignition.Passwd{
 			Users: []ignition.PasswdUser{
 				ignition.PasswdUser{
-					Name: d.GuestUsername,
+					Name:   d.GuestUsername,
+					Groups: []ignition.Group{"wheel", "sudo"},
 					SSHAuthorizedKeys: []ignition.SSHAuthorizedKey{
 						ignition.SSHAuthorizedKey(key),
 					},
