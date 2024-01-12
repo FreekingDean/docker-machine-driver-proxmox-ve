@@ -40,12 +40,10 @@ type Driver struct {
 	Pool     string // pool
 
 	// File to load as boot image RancherOS/Boot2Docker
-	ImageFile   string // in the format <storagename>:iso/<filename>.iso
-	ISOFilename string
 
-	Storage  string // internal PVE storage name
-	DiskSize int    // disk size in GB
-	Memory   int    // memory in GB
+	Scsi0  string //Scsi0 data
+	Ide0   string //Ide0 data
+	Memory int    // memory in GB
 
 	NetBridge  string // bridge applied to network interface
 	NetVlanTag int    // vlan tag
@@ -156,9 +154,15 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Value:  1,
 		},
 		mcnflag.StringFlag{
-			EnvVar: "PROXMOXVE_VM_ISO_FILENAME",
-			Name:   "proxmoxve-vm-iso-filename",
-			Usage:  "name of iso filename",
+			EnvVar: "PROXMOXVE_VM_SCSI0",
+			Name:   "proxmoxve-vm-scsi0",
+			Usage:  "proxmox scsi0 filename",
+			Value:  "",
+		},
+		mcnflag.StringFlag{
+			EnvVar: "PROXMOXVE_VM_ide0",
+			Name:   "proxmoxve-vm-ide0",
+			Usage:  "proxmox ide0 filename",
 			Value:  "",
 		},
 		mcnflag.StringFlag{
@@ -218,12 +222,11 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.Pool = flags.String("proxmoxve-proxmox-pool")
 
 	// VM configuration
-	d.DiskSize = flags.Int("proxmoxve-vm-storage-size")
-	d.Storage = flags.String("proxmoxve-vm-storage-path")
 	d.Memory = flags.Int("proxmoxve-vm-memory")
 	d.Memory *= 1024
 	d.GuestUsername = "docker"
-	d.ISOFilename = flags.String("proxmoxve-vm-iso-filename")
+	d.Scsi0 = flags.String("proxmoxve-vm-scsi0")
+	d.Ide0 = flags.String("proxmoxve-vm-ide0")
 	d.CPUCores = flags.Int("proxmoxve-vm-cpu-cores")
 	d.NetBridge = flags.String("proxmoxve-vm-net-bridge")
 	d.NetVlanTag = flags.Int("proxmoxve-vm-net-tag")
@@ -303,10 +306,6 @@ func (d *Driver) PreCreateCheck() error {
 	_, err := d.EnsureClient()
 	if err != nil {
 		return err
-	}
-
-	if len(d.Storage) < 1 {
-		d.Storage = "local"
 	}
 
 	if len(d.NetBridge) < 1 {
@@ -406,17 +405,21 @@ WantedBy=multi-user.target
 			Enabled: *proxmox.PVEBool(true),
 		},
 		Serials: &qemu.Serials{proxmox.String("socket")},
-		Ides: &qemu.Ides{
-			&qemu.Ide{
-				File:  fmt.Sprintf("%s:iso/%s", d.Storage, d.ISOFilename),
-				Media: qemu.PtrIdeMedia(qemu.IdeMedia_CDROM),
-			},
-		},
-		Scsis: &qemu.Scsis{
+	}
+
+	if d.Scsi0 != "" {
+		req.Scsis = &qemu.Scsis{
 			&qemu.Scsi{
-				File: fmt.Sprintf("%s:%d", d.Storage, d.DiskSize),
+				File: d.Scsi0,
 			},
-		},
+		}
+	}
+	if d.Ide0 != "" {
+		req.Ides = &qemu.Ides{
+			&qemu.Ide{
+				File: d.Ide0,
+			},
+		}
 	}
 	q := qemu.New(c)
 	_, err = q.Create(context.Background(), req)
