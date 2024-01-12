@@ -548,8 +548,8 @@ func (d *Driver) waitForTaskToComplete(taskId string, dur time.Duration) error {
 			return err
 		}
 		if resp.Status != "running" {
-			if resp.Status != "OK" {
-				return fmt.Errorf("task failed '%s'", resp.Status)
+			if resp.Exitstatus != nil && *resp.Exitstatus != "OK" {
+				return fmt.Errorf("task failed '%v'", resp.Exitstatus)
 			}
 			return nil
 		}
