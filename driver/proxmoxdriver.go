@@ -416,10 +416,12 @@ WantedBy=multi-user.target
 	}
 
 	if d.Scsi0 != "" {
+		d.debug("Adding scsi0")
 		scsi := &qemu.Scsi{
 			File: d.Scsi0,
 		}
 		if d.Scsi0Import != "" {
+			d.debug("adding import")
 			scsi.ImportFrom = proxmox.String(d.Scsi0Import)
 		}
 		req.Scsis = &qemu.Scsis{scsi}
