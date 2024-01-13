@@ -343,7 +343,8 @@ ConditionPathExists=!/var/lib/%N.stamp
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/bin/rpm-ostree install --apply-live --allow-inactive qemu-guest-agent && systemctl --now enable qemu-guest-agent
+ExecStart=/usr/bin/rpm-ostree install --apply-live --allow-inactive qemu-guest-agent
+ExecStart=/bin/systemctl --now enable qemu-guest-agent
 ExecStart=/bin/touch /var/lib/%N.stamp
 
 [Install]
