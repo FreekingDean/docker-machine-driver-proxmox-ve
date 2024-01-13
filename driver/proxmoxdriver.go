@@ -485,21 +485,22 @@ func (d *Driver) checkIP() (string, error) {
 		Vmid:    d.VMID,
 	})
 	if err != nil {
-		return "", err
+		d.debugf("error getting agent: %w", err)
+		return "", nil
 	}
 
 	jsonStr, err := json.Marshal(resp)
 	d.debugf("agent-resp: %s", jsonStr)
 	if err != nil {
 		d.debugf("Error marshalling json: %w", err)
-		return "", err
+		return "", nil
 	}
 
 	data := &AgentResponse{}
 	err = json.Unmarshal(jsonStr, data)
 	if err != nil {
 		d.debugf("Error unmarshalling json: %w", err)
-		return "", err
+		return "", nil
 	}
 
 	for _, nic := range data.Result {
