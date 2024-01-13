@@ -10,15 +10,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCheckIP(t *testing.T) {
+func TestGetVMIp(t *testing.T) {
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, mockresp)
+		fmt.Fprint(w, mockresp)
 	}))
 	d := &Driver{
 		driverDebug: true,
 		client:      proxmox.NewClient(s.URL),
 	}
-	resp, err := d.checkIP()
+	resp, err := d.getVMIp()
 	assert.NoError(t, err)
 	assert.Equal(t, "10.0.0.1", resp)
 }
