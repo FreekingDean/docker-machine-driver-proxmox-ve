@@ -156,12 +156,16 @@ WantedBy=multi-user.target
 
 	// resize disk
 	if d.ScsiDiskSize != 0 {
-		err := q.ResizeVm(context.Background(), qemu.ResizeVmRequest{
-			Disk: "scsi0",
-			Node: d.Node,
-			Vmid: d.VMID,
-			Size: fmt.Sprintf("%dG", d.ScsiDiskSize),
-		})
+		// allow machine to settle
+		time.Sleep(10 * time.Second)
+		err = d.retry(func() error {
+			return q.ResizeVm(context.Background(), qemu.ResizeVmRequest{
+				Disk: "scsi0",
+				Node: d.Node,
+				Vmid: d.VMID,
+				Size: fmt.Sprintf("%dG", d.ScsiDiskSize),
+			})
+		}, 10*time.Second, 10)
 		if err != nil {
 			return err
 		}
