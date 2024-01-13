@@ -461,36 +461,52 @@ WantedBy=multi-user.target
 	return nil
 }
 
+type AgentResponse struct {
+	Result []struct {
+		Name        string `json:"name"`
+		IPAddresses []struct {
+			IPAddressType string `json:"ip-address-type"`
+			IPAddress     string `json:"ip-address"`
+		} `json:"ip-addresses"`
+	} `json:"result"`
+}
+
 func (d *Driver) checkIP() (string, error) {
 	d.debugf("checking for IP address")
 	c, err := d.EnsureClient()
 	if err != nil {
 		return "", err
 	}
+
 	a := agent.New(c)
 	resp, err := a.Create(context.Background(), agent.CreateRequest{
 		Command: "network-get-interfaces",
 		Node:    d.Node,
 		Vmid:    d.VMID,
 	})
-
-	data, ok := resp["data"].(map[string][]map[string]interface{})
-	if !ok {
-		return "", nil
+	if err != nil {
+		return "", err
 	}
-	for _, nic := range data["result"] {
-		name, ok := nic["name"].(string)
-		if !ok {
-			return "", nil
-		}
-		if name != "lo" {
-			ips, ok := nic["ip-addresses"].([]map[string]string)
-			if !ok {
-				return "", nil
-			}
-			for _, ip := range ips {
-				if ip["ip-address-type"] == "ipv4" && ip["ip-address"] != "127.0.0.1" {
-					return "", nil
+
+	jsonStr, err := json.Marshal(resp)
+	d.debugf("agent-resp: %s", jsonStr)
+	if err != nil {
+		d.debugf("Error marshalling json: %w", err)
+		return "", err
+	}
+
+	data := &AgentResponse{}
+	err = json.Unmarshal(jsonStr, data)
+	if err != nil {
+		d.debugf("Error unmarshalling json: %w", err)
+		return "", err
+	}
+
+	for _, nic := range data.Result {
+		if nic.Name != "lo" {
+			for _, ip := range nic.IPAddresses {
+				if ip.IPAddressType == "ipv4" && ip.IPAddress != "127.0.0.1" {
+					return ip.IPAddress, nil
 				}
 			}
 		}
