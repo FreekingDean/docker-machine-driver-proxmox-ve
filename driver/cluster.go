@@ -11,6 +11,13 @@ import (
 	"github.com/FreekingDean/proxmox-api-go/proxmox/nodes/qemu"
 )
 
+const (
+	_ = 1 << (iota * 10)
+	KB
+	MB
+	GB
+)
+
 func (d *Driver) findAvailableNode() (string, error) {
 	d.debugf("finding available node")
 	client, err := d.EnsureClient()
@@ -75,8 +82,10 @@ func (d *Driver) findAvailableNode() (string, error) {
 			usedCPU += int(*vm.Cpus)
 			usedMem += *vm.Maxmem
 		}
+		d.debugf("Checking node with %dCPU & %dMemory", *node.Cpu, *node.Maxmem/GB)
+		d.debugf("Using %dCPU & %dMemory", usedCPU, usedMem/GB)
 		if *node.Maxmem-usedMem > maxAvailMem &&
-			usedMem+d.Memory*(1024*1024*1024) < *node.Maxmem &&
+			usedMem+d.Memory*GB < *node.Maxmem &&
 			d.CPUCores+usedCPU < int(*node.Cpu) {
 			bestNode = node.Node
 			maxAvailMem = (*node.Maxmem) - usedMem

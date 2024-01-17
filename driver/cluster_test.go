@@ -35,6 +35,8 @@ func TestFindAvailableNode(t *testing.T) {
 	}))
 	d := &Driver{
 		driverDebug: true,
+		Memory:      2,
+		CPUCores:    2,
 		Group:       "some-group",
 		client:      proxmox.NewClient(s.URL),
 	}
