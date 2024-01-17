@@ -102,6 +102,14 @@ WantedBy=multi-user.target
 		"name=opt/com.coreos/config,string='%s'",
 		strings.Replace(string(cfgStr), ",", ",,", -1),
 	)
+
+	node, err := d.findAvailableNode()
+	if err != nil {
+		return err
+	}
+	d.Node = node
+	d.debugf("Available node is '%d'", node)
+
 	d.VMID = id
 	req := qemu.CreateRequest{
 		Vmid:   d.VMID,

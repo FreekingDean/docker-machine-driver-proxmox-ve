@@ -8,11 +8,13 @@ import (
 
 const (
 	flagProxmoxHost         = "proxmoxve-proxmox-host"
-	flagProxmoxNode         = "proxmoxve-proxmox-node"
 	flagProxmoxUserName     = "proxmoxve-proxmox-user-name"
 	flagProxmoxUserPassword = "proxmoxve-proxmox-user-password"
 	flagProxmoxRealm        = "proxmoxve-proxmox-realm"
-	flagProxmoxPool         = "proxmoxve-proxmox-pool"
+
+	flagProxmoxNode  = "proxmoxve-proxmox-node"
+	flagProxmoxGroup = "proxmoxve-proxmox-group"
+	flagProxmoxPool  = "proxmoxve-proxmox-pool"
 
 	flagVMMemory       = "proxmoxve-vm-memory"
 	flagVMCores        = "proxmoxve-vm-cores"
@@ -32,10 +34,12 @@ const (
 func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 	return []mcnflag.Flag{
 		stringFlag(flagProxmoxHost, "Host to connect to", "192.168.1.256"),
-		stringFlag(flagProxmoxNode, "Node name to launch VMs on", ""),
 		stringFlag(flagProxmoxUserName, "PVE API Username", "root"),
 		stringFlag(flagProxmoxUserPassword, "PVE API Password", ""),
 		stringFlag(flagProxmoxRealm, "PVE API Realm", "pam"),
+
+		stringFlag(flagProxmoxNode, "Node name to launch VMs on", ""),
+		stringFlag(flagProxmoxGroup, "Group to schedule VMs to (only enabled if Node is unset)", ""),
 		stringFlag(flagProxmoxPool, "Pool to attach to VMs", ""),
 
 		intFlag(flagVMMemory, "VM Memory in GB", 8),

@@ -1,7 +1,7 @@
 github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 h1:UQHMgLO+TxOElx5B5HZ4hJQsoJ/PvUvKRhJHDQXO8P8=
 github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1/go.mod h1:xomTg63KZ2rFqZQzSB4Vz2SUXa1BpHTVz9L5PTmPC4E=
-github.com/FreekingDean/proxmox-api-go v0.2.1 h1:IyAW8oCPxhq0tUluplBKpH0cjy0EE6R97HDy3SDUNc8=
-github.com/FreekingDean/proxmox-api-go v0.2.1/go.mod h1:PJ8DAdrwe+jp6Qvvy27ahJjd3feU8zMIrlOHqPFj1Gg=
+github.com/FreekingDean/proxmox-api-go v0.2.2 h1:+05K6Zm00dO2mdjN/HQoyjwKpotTBn3gmVXAU7sLaJY=
+github.com/FreekingDean/proxmox-api-go v0.2.2/go.mod h1:PJ8DAdrwe+jp6Qvvy27ahJjd3feU8zMIrlOHqPFj1Gg=
 github.com/aws/aws-sdk-go v1.47.9 h1:rarTsos0mA16q+huicGx0e560aYRtOucV5z2Mw23JRY=
 github.com/aws/aws-sdk-go v1.47.9/go.mod h1:LF8svs817+Nz+DmiMQKTO3ubZ/6IaTpq3TjupRn3Eqk=
 github.com/coreos/go-json v0.0.0-20230131223807-18775e0fb4fb h1:rmqyI19j3Z/74bIRhuC59RB442rXUazKNueVpfJPxg4=

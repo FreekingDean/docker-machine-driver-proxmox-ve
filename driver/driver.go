@@ -18,13 +18,16 @@ type Driver struct {
 
 	// Basic Authentication for Proxmox VE
 	Host     string // Host to connect to
-	Node     string // optional, node to create VM on, host used if omitted but must match internal node name
 	User     string // username
 	Password string // password
 	Realm    string // realm, e.g. pam, pve, etc.
-	Pool     string // pool
 
-	// File to load as boot image RancherOS/Boot2Docker
+	// VM Placement Information
+	Node  string // optional, node to create VM, must supply either Node or Group this takes precedence over Group if both are set
+	Group string // optional, the HA group to use, must supply either Node or Group
+	Pool  string // pool
+
+	// File to load as boot image FedoraCoreOS
 	Scsi         string //Scsi0 data
 	ScsiImport   string //Scsi0 Import
 	ScsiDiskSize int    //Scsi1 DiskSize
@@ -60,10 +63,12 @@ func (d *Driver) DriverName() string {
 func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	// PROXMOX API Connection settings
 	d.Host = flags.String(flagProxmoxHost)
-	d.Node = flags.String(flagProxmoxNode)
 	d.User = flags.String(flagProxmoxUserName)
 	d.Password = flags.String(flagProxmoxUserPassword)
 	d.Realm = flags.String(flagProxmoxRealm)
+
+	d.Node = flags.String(flagProxmoxNode)
+	d.Group = flags.String(flagProxmoxGroup)
 	d.Pool = flags.String(flagProxmoxPool)
 
 	// VM configuration
