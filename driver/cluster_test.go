@@ -27,7 +27,7 @@ func TestFindAvailableNode(t *testing.T) {
 		}
 
 		if strings.Contains(r.URL.Path, "/nodes") {
-			fmt.Fprintf(w, `{"data":[{"node":"node2","maxmem":%d,"cpu":128,"status":"offline"},{"node":"node1","maxmem":%d,"cpu":%d,"status":"online"}]}`, 256*gig, 128*gig, 32)
+			fmt.Fprintf(w, `{"data":[{"node":"node2","maxmem":%d,"maxcpu":128,"status":"offline"},{"node":"node1","maxmem":%d,"maxcpu":%d,"status":"online"}]}`, 256*gig, 128*gig, 32)
 			return
 		}
 
