@@ -12,6 +12,7 @@ import (
 )
 
 func (d *Driver) findAvailableNode() (string, error) {
+	d.debugf("finding available node")
 	client, err := d.EnsureClient()
 	if err != nil {
 		return "", err
@@ -74,11 +75,11 @@ func (d *Driver) findAvailableNode() (string, error) {
 			usedCPU += int(*vm.Cpus)
 			usedMem += *vm.Maxmem
 		}
-		if usedMem-(*node.Maxmem) > maxAvailMem &&
+		if *node.Maxmem-usedMem > maxAvailMem &&
 			usedMem+d.Memory*(1024*1024*1024) < *node.Maxmem &&
 			d.CPUCores+usedCPU < int(*node.Cpu) {
 			bestNode = node.Node
-			maxAvailMem = usedMem - (*node.Maxmem)
+			maxAvailMem = (*node.Maxmem) - usedMem
 		}
 	}
 	if bestNode == "" {
