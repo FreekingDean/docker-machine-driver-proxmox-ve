@@ -84,8 +84,9 @@ func (d *Driver) findAvailableNode() (string, error) {
 		}
 		d.debugf("Checking node with %dCPU & %dMemory", *node.Maxcpu, *node.Maxmem/GB)
 		d.debugf("Using %dCPU & %dMemory", usedCPU, usedMem/GB)
+		d.debugf("Requesting %dCPU & %dMemory", d.CPUCores, d.Memory)
 		if *node.Maxmem-usedMem > maxAvailMem &&
-			usedMem+d.Memory*GB < *node.Maxmem &&
+			usedMem+(d.Memory/1024)*GB < *node.Maxmem &&
 			d.CPUCores+usedCPU < int(*node.Maxcpu) {
 			bestNode = node.Node
 			maxAvailMem = (*node.Maxmem) - usedMem
