@@ -3,8 +3,10 @@ package driver
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/FreekingDean/proxmox-api-go/proxmox/cluster/ha/groups"
 	"github.com/FreekingDean/proxmox-api-go/proxmox/nodes"
@@ -45,6 +47,8 @@ func (d *Driver) findAvailableNode() (string, error) {
 	}
 	d.debugf("looking for availability in %s", nodesStr)
 	nodesList := strings.Split(strings.TrimSpace(nodesStr), ",")
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(len(nodesList), func(i, j int) { nodesList[i], nodesList[j] = nodesList[j], nodesList[i] })
 
 	n := nodes.New(client)
 	nodeResp, err := n.Index(context.Background())
